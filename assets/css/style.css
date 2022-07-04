@@ -108,11 +108,12 @@ header h2 {
     background-color: var(--primary-color);
 }
 
+/* #d3d3d3 */
 .progress {
     width: 100%;
     -webkit-appearance: none;
     height: 6px;
-    background: #d3d3d3;
+    background: linear-gradient(90deg, rgb(214, 214, 214) 60%, rgb(214, 214, 214) 60%);
     outline: none;
     opacity: 0.7;
     -webkit-transition: 0.2s;

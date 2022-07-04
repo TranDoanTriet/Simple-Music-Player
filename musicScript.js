@@ -8,11 +8,15 @@ const cdThumb = $('.cd-thumb')
 const audio = $('#audio')
 
 const playBtn = $('.btn-toggle-play')
+const player = $('.player')
+const progress = $('#progress')
 
-console.log(playBtn)
+const nextBtn = $('.btn-next')
+const prevBtn = $('.btn-prev')
 
 const app = {
     currentIndex: 0,
+    isPlaying: false,
 
     songs: [
         {
@@ -104,19 +108,87 @@ const app = {
     },
     handleEvents: function () {
         const cdWidth = cd.offsetWidth
+        let _this = this
+        //phong to/ thu nho cd
         document.onscroll = function () {
             const scrollTop = window.scrollY
             const newCdWidth = cdWidth - scrollTop
 
             cd.style.width = newCdWidth > 0 ? newCdWidth + 'px' : 0
             cd.style.opacity = newCdWidth / cdWidth
-            console.log(newCdWidth)
+        }
+
+        //xu ly cd rotate
+        const cdThumbAnimate = cdThumb.animate([
+            {
+                transform: 'rotate(360deg)'
+            }
+        ], {
+            duration: 10000,
+            iterations: Infinity,
+        })
+        cdThumbAnimate.pause()
+        //xu ly khi click play
+        playBtn.onclick = function () {
+            if (_this.isPlaying) {
+                audio.pause()
+            } else {
+                audio.play()
+            }
+
+        }
+
+        //khi song dc play
+        audio.onplay = function () {
+            _this.isPlaying = true
+            player.classList.add('playing')
+            cdThumbAnimate.play()
+        }
+
+        //khi song pause
+        audio.onpause = function () {
+            _this.isPlaying = false
+            player.classList.remove('playing')
+            cdThumbAnimate.pause()
+        }
+
+        // tien do bai hat thay doi
+        audio.ontimeupdate = function () {
+            if (audio.duration) {
+                const progressPercent = Math.floor(audio.currentTime / audio.duration * 100)
+                progress.value = progressPercent
+                //xu ly thanh nhac fill theo nhac
+                let x = progressPercent;
+                let color = 'linear-gradient(90deg, rgb(117, 252, 117)' + x + '%' + ', rgb(214, 214, 214)' + x + '%)'
+                progress.style.background = color
+            }
+        }
+
+        //xu ly khi tua song
+        progress.onchange = function (e) {
+            const seekTime = audio.duration * e.target.value / 100
+            audio.currentTime = seekTime
+            console.log(seekTime)
+        }
+
+        //khi next song
+        nextBtn.onclick = function () {
+            _this.nextSong()
+            audio.play()
         }
     },
     loadCurrentSong: function () {
         heading.textContent = this.currentSong.name
         cdThumb.style.backgroundImage = `url('${this.currentSong.image}')`
         audio.src = this.currentSong.path
+    },
+
+    nextSong: function () {
+        this.currentIndex++
+        if (this.currentIndex >= this.songs.length) {
+            this.currentIndex = 0
+        }
+        this.loadCurrentSong()
     },
 
     start: function () {
