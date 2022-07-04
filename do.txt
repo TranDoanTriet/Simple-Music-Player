@@ -1,0 +1,10 @@
+1. render songs
+2. scroll top
+3. play pause seek
+4. CD rotate
+5. Next, previous
+6. play randomly
+7. next / repeat when ended
+8. active song
+9. scroll active song into view
+10. play song when click
