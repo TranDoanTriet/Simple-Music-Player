@@ -2,6 +2,8 @@
 const $ = document.querySelector.bind(document)
 const $$ = document.querySelectorAll.bind(document)
 
+const PLAYER_STORAGE_KEY = 'PLAYER'
+
 const cd = $('.cd')
 const heading = $('header h2')
 const cdThumb = $('.cd-thumb')
@@ -13,10 +15,17 @@ const progress = $('#progress')
 
 const nextBtn = $('.btn-next')
 const prevBtn = $('.btn-prev')
+const randomBtn = $('.btn-random')
+const repeatBtn = $('.btn-repeat')
+
+const playlist = $('.playlist')
 
 const app = {
     currentIndex: 0,
     isPlaying: false,
+    isRandom: false,
+    isRepeat: false,
+    config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
 
     songs: [
         {
@@ -80,10 +89,14 @@ const app = {
             image: './assets/img/song10.png'
         }
     ],
+    setConfig: function (key, value) {
+        this.config[key] = value;
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config))
+    },
     render: function () {
-        const htmls = this.songs.map(song => {
+        const htmls = this.songs.map((song, idx) => {
             return `
-                <div class="song">
+                <div data-index="${idx}" class="song ${idx === this.currentIndex ? 'active' : ''}">
                     <div class="thumb"
                         style="background-image: url('${song.image}')">
                     </div>
@@ -97,7 +110,7 @@ const app = {
                 </div>
             `
         })
-        $('.playlist').innerHTML = htmls.join('')
+        playlist.innerHTML = htmls.join('')
     },
     defineProperties: function () {
         Object.defineProperty(this, 'currentSong', {
@@ -159,7 +172,7 @@ const app = {
                 progress.value = progressPercent
                 //xu ly thanh nhac fill theo nhac
                 let x = progressPercent;
-                let color = 'linear-gradient(90deg, rgb(117, 252, 117)' + x + '%' + ', rgb(214, 214, 214)' + x + '%)'
+                let color = 'linear-gradient(90deg, rgb(251, 180, 64)' + x + '%' + ', rgb(214, 214, 214)' + x + '%)'
                 progress.style.background = color
             }
         }
@@ -173,14 +186,75 @@ const app = {
 
         //khi next song
         nextBtn.onclick = function () {
-            _this.nextSong()
+            if (_this.isRandom) {
+                _this.randomSong()
+            } else {
+                _this.nextSong()
+            }
             audio.play()
+            _this.render()
+            // _this.scrollToActiveSong()
+        }
+        //previous song
+        prevBtn.onclick = function () {
+            if (_this.isRandom) {
+                _this.randomSong()
+            } else {
+                _this.prevSong()
+            }
+            audio.play()
+            _this.render()
+            // _this.scrollToActiveSong()
+        }
+        //random song
+        randomBtn.onclick = function () {
+            _this.isRandom = !_this.isRandom
+            _this.setConfig('isRandom', _this.isRandom)
+            randomBtn.classList.toggle('active', _this.isRandom)
+        }
+
+        //repeat song
+        repeatBtn.onclick = function () {
+            _this.isRepeat = !_this.isRepeat
+            _this.setConfig('isRepeat', _this.isRepeat)
+            repeatBtn.classList.toggle('active', _this.isRepeat)
+        }
+
+        //song ended
+        audio.onended = function () {
+            if (_this.isRepeat) {
+                audio.play()
+            } else {
+                nextBtn.click()
+            }
+        }
+        //onclick song
+        playlist.onclick = function (e) {
+            const songNode = e.target.closest('.song:not(.active)')
+            if (songNode) {
+                _this.currentIndex = +songNode.dataset.index
+                _this.loadCurrentSong()
+                audio.play()
+                _this.render()
+            }
         }
     },
+    // scrollToActiveSong: function () {
+    //     setTimeout(() => {
+    //         $('.song.active').scrollIntoView({
+    //             block: nearest,
+    //             inline: center
+    //         })
+    //     }, 500)
+    // },
     loadCurrentSong: function () {
         heading.textContent = this.currentSong.name
         cdThumb.style.backgroundImage = `url('${this.currentSong.image}')`
         audio.src = this.currentSong.path
+    },
+    loadConfig: function () {
+        this.isRandom = this.config.isRandom
+        this.isRepeat = this.config.isRepeat
     },
 
     nextSong: function () {
@@ -190,8 +264,26 @@ const app = {
         }
         this.loadCurrentSong()
     },
-
+    prevSong: function () {
+        this.currentIndex--
+        if (this.currentIndex < 0) {
+            this.currentIndex = this.songs.length - 1
+        }
+        this.loadCurrentSong()
+    },
+    randomSong: function () {
+        let newIndex
+        do {
+            newIndex = Math.floor(Math.random() * this.songs.length)
+        } while (newIndex === this.currentIndex)
+        this.currentIndex = newIndex
+        console.log(newIndex)
+        this.loadCurrentSong()
+    },
     start: function () {
+        //load config
+        this.loadConfig()
+
         //Định nghĩa các thuốc tính cho object
         this.defineProperties()
 
@@ -203,6 +295,9 @@ const app = {
 
         //render playlist
         this.render()
+
+        randomBtn.classList.toggle('active', this.isRandom)
+        repeatBtn.classList.toggle('active', this.isRepeat)
     }
 }
 
